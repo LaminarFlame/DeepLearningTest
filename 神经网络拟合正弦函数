@@ -1,0 +1,95 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+class NeuralNetwork:
+    def __init__(self, input_size, hidden_layer_size, output_size):
+        ## 输入维度，输出维度
+        self.input_size = input_size
+        self.hidden_layer_size = hidden_layer_size
+        self.output_size = output_size
+
+        ## 初始化参数，偏置
+        np.random.seed(0)
+        self.w1 = np.random.randn(hidden_layer_size, input_size)
+        self.b1 = np.random.randn(hidden_layer_size)
+        self.w2 = np.random.randn(output_size, hidden_layer_size)
+        self.b2 = np.random.randn(output_size)
+        
+
+    ## 前向传播
+    def forward(self, x):
+        hidden_layer = np.dot(x.reshape(-1, 1), self.w1.T) + self.b1.reshape(1, -1)
+        hidden_layer = np.maximum(0, hidden_layer)   ## relu激活
+        predicted_output = np.dot(self.w2, hidden_layer.T) + self.b2.reshape(-1, 1)
+        return hidden_layer, predicted_output
+
+
+    ## 反向传播
+    def backward(self, x, y, hidden_layer, predicted_output):
+        grad_predicted_output = 2*(predicted_output - y) / len(x)   ## 差值除以样本数量
+        grad_w2 = np.dot(grad_predicted_output, hidden_layer)   ## w2的梯度
+        grad_b2 = np.sum(grad_predicted_output, axis=1)   ## b2的梯度
+        relu_derivative = np.where(np.dot(x.reshape(-1,1), self.w1.T) + self.b1.reshape(1,-1) > 0, 1, 0)
+        grad_hidden_layer = np.dot(self.w2.T, grad_predicted_output) * relu_derivative.T
+        grad_w1 = np.dot(grad_hidden_layer, x.reshape(-1,1))
+        grad_b1 = np.sum(grad_hidden_layer, axis=1)
+        
+        return grad_w1, grad_b1, grad_w2, grad_b2
+
+    ## 更新参数
+    def update(self, grad_w1, grad_b1, grad_w2, grad_b2, learing_rate):
+        self.w1 -= learing_rate * grad_w1
+        self.b1 -= learing_rate * grad_b1
+        self.w2 -= learing_rate * grad_w2
+        self.b2 -= learing_rate * grad_b2
+        
+
+    ## 训练
+    def train(self, x, y, learning_rate, epochs):
+        for epoch in range(epochs):
+            ## 前向传播
+            hidden_layer, predicted_output = self.forward(x)
+            ## 计算损失
+            loss = np.square(predicted_output - y).mean()
+            if epoch % 100 == 0:
+                print(f"epoch {epoch}: loss = {loss}")
+            ## 反向传播
+            grad_w1, grad_b1, grad_w2, grad_b2 = self.backward(x, y, hidden_layer, predicted_output)
+            ## 更新权重和偏置
+            self.update(grad_w1, grad_b1, grad_w2, grad_b2, learning_rate)
+
+
+    ## 预测
+    def predict(self, x):
+        hidden_layer, predicted_output = self.forward(x)
+        return predicted_output
+    
+
+if __name__ == '__main__':
+## 生成数据
+    x = np.linspace(0, 2*np.pi, 100)
+    y = np.sin(x)
+
+    ## 创建神经网络对象
+    net = NeuralNetwork(input_size=1, hidden_layer_size=64, output_size=1)
+
+    ## 训练
+    learning_rate = 0.001
+    epochs = 10000
+    net.train(x, y, learning_rate, epochs)
+
+    ## 测试
+    test_x = np.linspace(0, 2*np.pi, 100)
+    test_y = np.sin(x)
+    predicted_output = net.predict(test_x)
+    test_loss = np.square(predicted_output - test_y).mean()
+    print(f"Test loss: {test_loss}")
+
+    # 绘制原始sin函数和拟合值
+    plt.scatter(test_x, test_y, label='sin(x)')
+    plt.scatter(test_x, predicted_output.T, label='Fitted', marker='x')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title('Fitting sin(x)')
+    plt.legend()
+    plt.show()
