@@ -1,0 +1,98 @@
+# 相关库的导入，随机数/随机种子的定义
+
+%matplotlib inline
+import numpy as np
+import matplotlib.pyplot as plt    # 数据可视化库，主要用于画图
+from PIL import Image    #　PIL/pillow图像处理库，具有图像打开和保存、图像显示、图像格式和大小转换、绘图和图像处理等功能，能支持多种图像格式
+
+import torch
+import torch.nn as nn
+
+np.random.seed(2024)    # numpy随机种子
+torch.manual_seed(2024)    # torch随机种子
+
+# 新建文件夹png用于存放图片,gif用于存放动图
+%mkdir png
+%mkdir gif
+
+# GPU计算
+torch.__version__    # torch版本
+print(torch.cuda.is_available())    # True或False
+print(torch.cuda.device_count())    # 查看英伟达GPU数量,1表示有1个GPU
+print(torch.cuda.current_device())    # 查看当前GPU索引号，索引号从0开始
+print(torch.cuda.get_device_name(0))    # 根据索引号0查看GPU名字
+
+if torch.cuda.is_available():
+    device = torch.device("cuda")    # 支持GPU的话，指定设备
+
+
+# 定义gif动图保存函数、画图函数、谐振子解析函数
+
+# 利用PIL定义gif动图保存函数
+def save_gif(outfile, files, fps=5, loop=0):
+    imgs = [Image.open(file) for file in files]    # 从files中读取file, 打开图像使用Image.open("example.jpg")
+    imgs[0].save(fp=outfile, format='gif', append_images=imgs[1:], save_all=True, duration=int(1000/fps), loop=loop)    # 生成并保存gif图，image.save("example.jpg")
+
+# 定义画图函数
+def plot(t, y, yh, t_data, y_data, tp=None, axis_lim=1):
+    plt.figure(figsize=(8,4))    # 定义画布大小
+    plt.plot(t, y, color='grey', linewidth=2, alpha=0.8, label='Exact solution')    # 绘制精确解的折线图，plot:折线图，定义t、y为精确解的形参，alpha:透明度
+    plt.plot(t, yh, color='tab:blue', linewidth=4, alpha=0.8, label='FCNN prediction')    # 绘制FCNN预测解的折线图，具体预测结果由后续函数定义和运算给出，h:hat,表预测
+    plt.scatter(t_data, y_data, color='k', alpha=0.4, label='Training data')    # 绘制用于训练的数据的散点图，训练数据通常较少，可将训练数据画出，以便后续用于观察和评估训练效果
+    if tp is not None:    # tp：物理损失训练位置，是可选参数，默认为None，不执行if下面的语句。当需要进行PINN仿真时，可将其赋值激活，画出参与PINN训练的x的位置，便于观察
+        plt.scatter(tp, torch.zeros_like(tp), s=60, color='tab:green', alpha=0.4, label='Phys. loss train. locat.')    # 生成与tp形状相同的0张量，点的大小为60
+    legend = plt.legend(loc="upper right", bbox_to_anchor=(1, 1), frameon=True, fontsize='large')    # 图例的位置loc设置和锚点位置bbox_to_anchor都设置为图表的右上角，即图例与图表重叠
+    plt.setp(legend.get_texts(), color='k')    # 使用setp方法设置图例所有文本的属性
+    if axis_lim==1:    # 后续可能改变轴限，能明确则明确，不能则不明确
+        plt.xlim(-0.05, 1.05)
+        plt.ylim(-1.1 , 1.1 )
+        plt.text(1.065, 0.7 , "Train step: %i"%(i+1), fontsize="xx-large", color="k")
+    elif axis_lim==2:
+        plt.xlim(-0.05, 1.05)
+        plt.ylim(-2.1 , 2.1 )
+        plt.text(1.065, 0.7 , "Train step: %i"%(i+1), fontsize="xx-large", color="k")
+    else:
+        plt.text(1.065, 0.7 , "Train step: %i"%(i+1), fontsize="xx-large", color="k")
+    plt.axis(on)
+
+# 定义谐振子解析函数
+def oscillator(m, k, c, t):    # m:质量，k:刚度，c:阻尼，t:时间
+    delta  = c / m /2
+    omega0 = np.sqrt( k / m)    # 常数，用np，下同
+    omega  = np.sqrt( omega0**2 - delta**2)
+    phi    = np.arctan( -1 * delta / omega)
+    A      = 1 / 2 / np.cos( phi )
+    cos    = torch.cos( omega * t + phi)    # 与时间有关的变量，用torch，下同
+    exp    = torch.exp( -1 * delta * t )
+    x_t    = 2 * A * exp * cos
+    return x_t
+
+
+# 设定谐振子参数值，并画出解析解的图像
+m = 1
+k = 400
+c = 4
+t = torch.linspace(0,1,500).view(-1,1)
+y = oscillator(m, k, c, t)
+plt.plot(t,y)
+plt.show()
+
+
+class FCNN(nn.Module):
+    def __init__(self, N_INPUT, N_OUTPUT, N_HIDDEN, N_LAYERS):
+        super().__init__()    ## 继承父类 nn.Module 的初始化方法
+        activation = nn.Tanh    ## 激活函数选择tanh
+        self.fcs = nn.Sequential(*[     ## fcs:fully connected first stage, 表示输入层到第一个隐藏层,名称可自定义如self.input_layer。nn.Sequential是一个容器模块,用于按顺序组织多个神经网络层
+            nn.Linear(N_INPUT, N_HIDDEN),     ## 线性变换
+            activation()])    ## 激活函数
+        self.fch = nn.Sequential(*[    ## fch:fully connected hidden, 表示中间的隐藏层,类似self.hidden_layer。外层nn.Sequential：将所有内层的nn.Sequential对象按顺序组织在一起
+            nn.Sequential( *[nn.Linear(N_HIDDEN, N_HIDDEN),     ## 内层nn.Sequential, 解包操作*: 在nn.Sequential中使用*操作符将列表中的多个模块展开为nn.Sequential的参数
+            activation()] ) 
+            for _ in range(N_LAYERS-1)])    ## 使用列表推导，创建 N_LAYERS-1 个隐藏层。_ 是一个占位符，表示不关心循环变量
+        self.fce = nn.Linear(N_HIDDEN, N_OUTPUT)    ## fce: fully connected end, 表示最后一个隐藏层到输出层, 类似self.output_layer
+
+    def forward(self, y):    ## 前向传播方法，定义了输入数据如何通过网络的每一层
+        y = self.fcs(y)      ## 将输入数据通过输入层到第一个隐藏层的变换
+        y = self.fch(y)      ## 将数据通过所有中间的隐藏层
+        y = self.fce(y)      ## 将数据通过最后一个隐藏层到输出层的变换
+        return y
