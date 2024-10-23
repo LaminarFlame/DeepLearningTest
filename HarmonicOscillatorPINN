@@ -77,7 +77,17 @@ y = oscillator(m, k, c, t)
 plt.plot(t,y)
 plt.show()
 
+# 训练数据
+t_data = t[0:200:20]
+y_data = y[0:200:20]
 
+plt.figure(figsize=(8,4))
+plt.plot(t,y, label='Exact solution')
+plt.scatter(t_data, y_data, color='k', label='Training data')
+plt.legend()
+plt.show()
+
+# 全连接神经网络Fully connected neural network
 class FCNN(nn.Module):
     def __init__(self, N_INPUT, N_OUTPUT, N_HIDDEN, N_LAYERS):
         super().__init__()    ## 继承父类 nn.Module 的初始化方法
@@ -96,3 +106,30 @@ class FCNN(nn.Module):
         y = self.fch(y)      ## 将数据通过所有中间的隐藏层
         y = self.fce(y)      ## 将数据通过最后一个隐藏层到输出层的变换
         return y
+
+# 神经网络的训练
+model = FCNN(1,1,32,3)
+optimizer = torch.optim.adam(model.parameters(), lr=1e-4)
+
+files = []
+
+for i in range(2000):
+    optimizer.zero_grad()
+    yh = model(t_data)
+    loss = torch.mean((yh - y_data)**2)
+    loss.backward()
+    optimizer.step()
+
+    if (i+1) % 200 == 0:
+        yh = model(t).detach()
+        plot(t,y,yh,t_data,y_data)
+        file = "png/FCNN_%.8i.png"%(i+1)
+        plt.savefig(file, bbox_inches='tight', pad_inches=0.1, dpi=100, facecolor='white')
+        file.append(file)
+
+        if (i+1) in [200, 800, 4000, 10000, 20000]:
+            plt.show()
+        else:
+            plt.close("all")
+
+save_gif("gif/FCNN.gif", files, fps=20, loop=0)
