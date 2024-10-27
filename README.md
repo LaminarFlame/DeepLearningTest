@@ -37,9 +37,9 @@ $$
 y(0) = 1 ~
 $$
 
-$
-令$ \delta = \frac{c}{2m} $，$ \omega_0 = \sqrt{ \frac{k}{m}} $，在欠阻尼的条件下$ \delta < \omega_0 $，则可得其解析解为
-$
+
+令$$ \delta = \frac{c}{2m} $，$ \omega_0 = \sqrt{ \frac{k}{m}} $$，在欠阻尼的条件下$$ \delta < \omega_0 $$，则可得其解析解为
+
 
 $$ 
 y(t) = 2 A e^{- \delta t} \cos{ (\omega t + \phi) } ~
