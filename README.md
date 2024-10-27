@@ -6,9 +6,13 @@
 
 略
 
+
+
 # 案例2：用torch进行正弦函数的近似
 
 略
+
+
 
 
 # 案例三：二阶常系数齐次线性微分方程的全连接神经网络和物理信息神经网络的近似
@@ -33,21 +37,21 @@ $$
 y(0) = 1 ~
 $$
 
-$$
+$
 令$ \delta = \frac{c}{2m} $，$ \omega_0 = \sqrt{ \frac{k}{m}} $，在欠阻尼的条件下$ \delta < \omega_0 $，则可得其解析解为
-$$
+$
 
 $$ 
 y(t) = 2 A e^{- \delta t} \cos{ (\omega t + \phi) } ~
 $$
 
-$$
+$
 其中，$ \omega = \sqrt{ \omega^2_0 + \delta^2} $，$ \phi = \arctan(-\frac{\delta}{\omega}) $，$ A = \frac{1}{2\cos \phi} = \frac{\omega_0}{2 \sqrt{ \omega^2_0 - \delta ^2 } }$
-$$
+$
 
-$$
+$
 设$ m=1 , k=400, c=4 $，忽略单位问题，则精确解为
-$$
+$
 
 $$
 y(t) = \frac{5 \sqrt{11}}{33} e^{-2t} \cos(6 \sqrt{11} t - 0.1001674211615598)
