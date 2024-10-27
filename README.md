@@ -54,7 +54,7 @@ $$
 
 其中
 
-$ \omega = \sqrt{ \omega^2_0 + \delta^2} $  $ \phi = \arctan(-\frac{\delta}{\omega}) $  $ A = \frac{1}{2\cos \phi} = \frac{\omega_0}{2 \sqrt{ \omega^2_0 - \delta ^2 } }$
+$ \omega = \sqrt{ \omega^2_0 + \delta^2}   \phi = \arctan(-\frac{\delta}{\omega})   A = \frac{1}{2\cos \phi} = \frac{\omega_0}{2 \sqrt{ \omega^2_0 - \delta ^2 } }$
 
 
 
